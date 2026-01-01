@@ -16,6 +16,7 @@ typedef struct {
     int direction;
 } Tank;
 
+
 void build_walls(void) {
     wall_count = 0;  // IMPORTANT: reset
 
@@ -35,6 +36,7 @@ void build_walls(void) {
 }
 
 void shoot_tank(Tank* tank) {
+    
     printf("Bang bang!\n");
 }
 
@@ -102,6 +104,12 @@ void draw_stuff(Tank* tank) {
 
     draw_gameboard(); // draw the gameboard
     draw_tank(tank);
+
+    int fps = GetFPS();
+    int posX = 10;
+    int posY = 10;
+    int font_size = 12;
+    DrawText(TextFormat("%d", fps), posX, posY, font_size, BLUE);
 }
 
 Tank init_tank() {
@@ -111,7 +119,7 @@ Tank init_tank() {
     .position.y = 32,
     .position.height = 24,
     .position.width = 24
-};
+    };
     return tank;
 }
 
