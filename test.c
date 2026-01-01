@@ -104,11 +104,7 @@ void draw_stuff(Tank* tank) {
     draw_tank(tank);
 }
 
-int main(void)
-{
-    InitWindow(SQUARE_SIZE * 25, SQUARE_SIZE * 25, "This is my test program for raylib");
-    
-    read_base_file();
+Tank init_tank() {
     Tank tank = {
     .direction = 0,
     .position.x = 32,
@@ -116,11 +112,10 @@ int main(void)
     .position.height = 24,
     .position.width = 24
 };
-    Tank* tank_p = &tank;
-    build_walls();
-    while (!WindowShouldClose())
-    {
-            
+    return tank;
+}
+
+void key_press_checking(Tank *tank_p) {
         // Set direction based on key press
         if (IsKeyDown(KEY_W)) tank_p->direction = up;
         else if (IsKeyDown(KEY_S)) tank_p->direction = down;
@@ -131,6 +126,20 @@ int main(void)
         // when pressing space make the tank fire its gun
         if (IsKeyPressed(KEY_SPACE)) shoot_tank(tank_p);
         // move the tank in the direction of the key press
+}
+
+int main(void)
+{
+    InitWindow(SQUARE_SIZE * 25, SQUARE_SIZE * 25, "This is my test program for raylib");
+    
+    read_base_file();
+    Tank tank = init_tank();
+    // make a pointer to the tank
+    Tank* tank_p = &tank;
+    build_walls();
+    while (!WindowShouldClose())
+    {
+        key_press_checking(tank_p); 
         move_tank(tank_p);
 
         BeginDrawing();
