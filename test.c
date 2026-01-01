@@ -34,6 +34,10 @@ void build_walls(void) {
     }
 }
 
+void shoot_tank(Tank* tank) {
+    printf("Bang bang!\n");
+}
+
 void move_tank(Tank* tank) {
 
     Tank tank_copy = *tank;
@@ -123,6 +127,9 @@ int main(void)
         else if (IsKeyDown(KEY_D)) tank_p->direction = right;
         else if (IsKeyDown(KEY_A)) tank_p->direction = left;
         else tank_p->direction = no_direction;
+
+        // when pressing space make the tank fire its gun
+        if (IsKeyPressed(KEY_SPACE)) shoot_tank(tank_p);
         // move the tank in the direction of the key press
         move_tank(tank_p);
 
