@@ -139,11 +139,11 @@ int main(void)
     build_walls();
     while (!WindowShouldClose())
     {
-        key_press_checking(tank_p); 
-        move_tank(tank_p);
+        key_press_checking(tank_p); // function for handling and listening for key presses
+        move_tank(tank_p); // based on key strokes move the tank
 
         BeginDrawing();
-        draw_stuff(tank_p);
+        draw_stuff(tank_p); // update the graphics
         EndDrawing();
     }
 
