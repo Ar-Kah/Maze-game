@@ -1,4 +1,5 @@
 #include "raylib.h"
+#include "stdlib.h"
 #include "stdio.h"
 
 int gameboard[25*25];
@@ -6,10 +7,22 @@ int SQUARE_SIZE = 30;
 int wall_count = 0;
 Rectangle walls[25*25];
 
+
 enum {
 up, left, down, right, no_direction
 };
 
+
+typedef struct {
+    Rectangle position;
+    int direction;
+} Shot;
+
+typedef struct {
+    Shot *items;
+    size_t count;
+    size_t capacity;
+} Dyn_array;
 
 typedef struct {
     Rectangle position;
@@ -35,15 +48,33 @@ void build_walls(void) {
     }
 }
 
-void shoot_tank(Tank* tank) {
+void shoot_tank(Tank* tank, Dyn_array *shots) {
+    int shot_direction = no_direction;
+
+    shot_direction = tank->direction;
+
+    Shot shot = {
+    .direction = shot_direction,
+    .position.x = tank->position.x,
+    .position.y = tank->position.y,
+    .position.height = 10,
+    .position.width = 10
+
+};
+
+    if (shots->count >= shots->capacity) {
+        if (shots->capacity == 0) shots->capacity = 8;
+        else shots->capacity *= 2;
+        shots->items = realloc(shots->items, shots->capacity * sizeof(*shots->items));
+    }
+    shots->items[shots->count++] = shot; 
     
     printf("Bang bang!\n");
 }
 
-void move_tank(Tank* tank) {
+void move_tank(Tank* tank, float delta) {
 
     Tank tank_copy = *tank;
-    float delta = GetFrameTime();
     float multiplier = delta * 100;
     
     if (tank_copy.direction == up) tank_copy.position.y -= multiplier * 1;
@@ -74,6 +105,18 @@ void read_base_file(void) {
     }
 }
 
+void draw_shots(Dyn_array *shots) {
+    for ( int i = 0; i < shots->count; i++ ) {
+        Shot *shot = &shots->items[i];
+        int posX = shot->position.x;
+        int posY = shot->position.y;
+        int width = shot->position.width;
+        
+        int height = shot->position.height;
+        DrawRectangle(posX, posY, width, height, BLACK);
+    }
+}
+
 void draw_tank(Tank* tank) {
     DrawRectangle(tank->position.x, tank->position.y, 24, 24, BLACK);
 }
@@ -99,17 +142,19 @@ void draw_gameboard(void) {
 
 }
 
-void draw_stuff(Tank* tank) {
+void draw_stuff(Tank* tank, Dyn_array *shots) {
     ClearBackground(RAYWHITE); // draw a static background
 
     draw_gameboard(); // draw the gameboard
     draw_tank(tank);
+    draw_shots(shots);
+
 
     int fps = GetFPS();
     int posX = 10;
     int posY = 10;
     int font_size = 12;
-    DrawText(TextFormat("%d", fps), posX, posY, font_size, BLUE);
+    DrawText(TextFormat("%d", fps), posX, posY, font_size, BLACK);
 }
 
 Tank init_tank() {
@@ -123,7 +168,7 @@ Tank init_tank() {
     return tank;
 }
 
-void key_press_checking(Tank *tank_p) {
+void key_press_checking(Tank *tank_p, Dyn_array* shots) {
         // Set direction based on key press
         if (IsKeyDown(KEY_W)) tank_p->direction = up;
         else if (IsKeyDown(KEY_S)) tank_p->direction = down;
@@ -132,13 +177,42 @@ void key_press_checking(Tank *tank_p) {
         else tank_p->direction = no_direction;
 
         // when pressing space make the tank fire its gun
-        if (IsKeyPressed(KEY_SPACE)) shoot_tank(tank_p);
+        if (IsKeyPressed(KEY_SPACE)) shoot_tank(tank_p, shots);
         // move the tank in the direction of the key press
+}
+
+
+void update_shots(Dyn_array* shots, float delta) {
+    for (int i = 0; i < shots->count; i++) {
+        Shot *shot = &shots->items[i];
+        Shot shot_copy = *shot;
+        float shot_speed = 200;
+        float multiplier = delta * shot_speed; // shot speed
+        if (shot_copy.direction == left) shot_copy.position.x -= multiplier;
+        else if (shot_copy.direction == right) shot_copy.position.x += multiplier;
+        else if (shot_copy.direction == up) shot_copy.position.y -= multiplier;
+        else if (shot_copy.direction == down) shot_copy.position.y += multiplier;
+
+
+        // check for collitions
+        for (int j = 0; j < wall_count; j++) {
+            if (CheckCollisionRecs(shot_copy.position, walls[j])) {
+
+                return;
+            }
+        }
+        *shot = shot_copy;
+    }
+
+
 }
 
 int main(void)
 {
     InitWindow(SQUARE_SIZE * 25, SQUARE_SIZE * 25, "This is my test program for raylib");
+
+    // make an array for the bullets
+    Dyn_array shots = {0};
     
     read_base_file();
     Tank tank = init_tank();
@@ -147,11 +221,13 @@ int main(void)
     build_walls();
     while (!WindowShouldClose())
     {
-        key_press_checking(tank_p); // function for handling and listening for key presses
-        move_tank(tank_p); // based on key strokes move the tank
+        float delta = GetFrameTime();
+        key_press_checking(tank_p, &shots); // function for handling and listening for key presses
+        update_shots(&shots, delta);
+        move_tank(tank_p, delta); // based on key strokes move the tank
 
         BeginDrawing();
-        draw_stuff(tank_p); // update the graphics
+        draw_stuff(tank_p, &shots); // update the graphics
         EndDrawing();
     }
 
