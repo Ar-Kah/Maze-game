@@ -181,30 +181,45 @@ void key_press_checking(Tank *tank_p, Dyn_array* shots) {
         // move the tank in the direction of the key press
 }
 
+void update_array_order(int idx, Dyn_array *shots) {
+    for (int i = idx; i < shots->count; i++) {
+        shots->items[i] = shots->items[i+1];
+    }
+}
 
 void update_shots(Dyn_array* shots, float delta) {
-    for (int i = 0; i < shots->count; i++) {
-        Shot *shot = &shots->items[i];
-        Shot shot_copy = *shot;
+    size_t i = 0;
+
+    while (i < shots->count) {
+        Shot shot_copy = shots->items[i];
         float shot_speed = 200;
-        float multiplier = delta * shot_speed; // shot speed
-        if (shot_copy.direction == left) shot_copy.position.x -= multiplier;
+        float multiplier = delta * shot_speed;
+
+        if (shot_copy.direction == left)  shot_copy.position.x -= multiplier;
         else if (shot_copy.direction == right) shot_copy.position.x += multiplier;
-        else if (shot_copy.direction == up) shot_copy.position.y -= multiplier;
-        else if (shot_copy.direction == down) shot_copy.position.y += multiplier;
+        else if (shot_copy.direction == up)    shot_copy.position.y -= multiplier;
+        else if (shot_copy.direction == down)  shot_copy.position.y += multiplier;
 
-
-        // check for collitions
+        bool hit_wall = false;
         for (int j = 0; j < wall_count; j++) {
             if (CheckCollisionRecs(shot_copy.position, walls[j])) {
-
-                return;
+                hit_wall = true;
+                break;
             }
         }
-        *shot = shot_copy;
+
+        if (hit_wall) {
+            // remove shot i
+            for (size_t k = i + 1; k < shots->count; k++) {
+                shots->items[k - 1] = shots->items[k];
+            }
+            shots->count--;
+            // do NOT increment i
+        } else {
+            shots->items[i] = shot_copy;
+            i++; // only advance if no deletion
+        }
     }
-
-
 }
 
 int main(void)
@@ -226,8 +241,7 @@ int main(void)
         update_shots(&shots, delta);
         move_tank(tank_p, delta); // based on key strokes move the tank
 
-        BeginDrawing();
-        draw_stuff(tank_p, &shots); // update the graphics
+        BeginDrawing(); draw_stuff(tank_p, &shots); // update the graphics
         EndDrawing();
     }
 
