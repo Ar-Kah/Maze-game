@@ -12,6 +12,12 @@ enum {
 up, left, down, right, no_direction
 };
 
+enum EnemyState {
+    ENEMY_IDLE,
+    ENEMY_PATROL,
+    ENEMY_CHASE,
+    ENEMY_ATTACK
+};
 
 typedef struct {
     Rectangle position;
@@ -28,6 +34,13 @@ typedef struct {
     Rectangle position;
     int direction;
 } Tank;
+
+typedef struct {
+    Rectangle position;
+    int direction;
+    enum EnemyState state;
+    float desition_times;
+} Enemy_tank;
 
 
 void build_walls(void) {
