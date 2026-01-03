@@ -87,7 +87,7 @@ void move_tank(Tank* tank, float delta) {
 
     Tank tank_copy = *tank;
     float multiplier = delta * 100;
-    
+
     if (tank_copy.direction == up) tank_copy.position.y -= multiplier * 1;
     else if (tank_copy.direction == down) tank_copy.position.y += multiplier * 1;
 
@@ -153,12 +153,18 @@ void draw_gameboard(void) {
 
 }
 
-void draw_stuff(Tank* tank, Dyn_array *shots) {
+
+void draw_enemy_tank(Enemy_tank* e_tank) {
+    DrawRectangle(e_tank->position.x, e_tank->position.y, 24, 24, DARKGRAY);
+}
+
+void draw_stuff(Tank* tank, Dyn_array *shots, Enemy_tank *e_tank) {
     ClearBackground(RAYWHITE); // draw a static background
 
     draw_gameboard(); // draw the gameboard
     draw_tank(tank);
     draw_shots(shots);
+    draw_enemy_tank(e_tank);
 
 
     int fps = GetFPS();
@@ -177,6 +183,18 @@ Tank init_tank() {
     .position.width = 24
     };
     return tank;
+}
+Enemy_tank init_enemy_tank(int posX, int posY, int width, int height, int direction) {
+    Enemy_tank enemy_tank = {
+    .position.x = posX,
+    .position.y = posY,
+    .position.height = height,
+    .position.width = width,
+    .direction = direction,
+    .desition_times = 50,
+    .state = ENEMY_PATROL
+};
+    return enemy_tank;
 }
 
 void key_press_checking(Tank *tank_p, Dyn_array* shots) {
@@ -239,10 +257,12 @@ int main(void)
     SetTargetFPS(60);
 
     // make an array for the bullets
-    Dyn_array shots = {0};
+    Dyn_array shots = {0}; // initialize the shots array as 0
     
-    read_base_file();
-    Tank tank = init_tank();
+    read_base_file(); // read the txt file where the gameboard grid is writen
+    Tank tank = init_tank(); // init the players tank
+    Enemy_tank e_tank = init_enemy_tank(692, 32, 24, 24, left); // init the enemy tank
+
     // make a pointer to the tank
     Tank* tank_p = &tank;
     build_walls();
@@ -253,7 +273,8 @@ int main(void)
         update_shots(&shots, delta);
         move_tank(tank_p, delta); // based on key strokes move the tank
 
-        BeginDrawing(); draw_stuff(tank_p, &shots); // update the graphics
+        BeginDrawing();
+        draw_stuff(tank_p, &shots, &e_tank); // update the graphics
         EndDrawing();
     }
 
