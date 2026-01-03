@@ -68,8 +68,6 @@ void shoot_tank(Tank* tank, Dyn_array *shots) {
         shots->items = realloc(shots->items, shots->capacity * sizeof(*shots->items));
     }
     shots->items[shots->count++] = shot; 
-    
-    printf("Bang bang!\n");
 }
 
 void move_tank(Tank* tank, float delta) {
@@ -113,7 +111,7 @@ void draw_shots(Dyn_array *shots) {
         int width = shot->position.width;
         
         int height = shot->position.height;
-        DrawRectangle(posX, posY, width, height, BLACK);
+        DrawRectangle(posX, posY, width, height, RED);
     }
 }
 
@@ -225,6 +223,7 @@ void update_shots(Dyn_array* shots, float delta) {
 int main(void)
 {
     InitWindow(SQUARE_SIZE * 25, SQUARE_SIZE * 25, "This is my test program for raylib");
+    SetTargetFPS(60);
 
     // make an array for the bullets
     Dyn_array shots = {0};
