@@ -1,6 +1,7 @@
 #include "raylib.h"
 #include "stdlib.h"
 #include "stdio.h"
+#include "time.h"
 
 int gameboard[25*25];
 int SQUARE_SIZE = 30;
@@ -10,6 +11,10 @@ Rectangle walls[25*25];
 
 enum {
 up, left, down, right, no_direction
+};
+
+enum {
+ground, wall
 };
 
 enum EnemyState {
@@ -61,6 +66,54 @@ void build_walls(void) {
     }
 }
 
+/* Function to get the index of the gameboard grid to calculate
+ * what options are available for moving for the ai enemy tanks */
+int* get_index_in_grid(int posX, int posY) {
+    int index = (25* (posY / SQUARE_SIZE)) + (posX / SQUARE_SIZE);
+    // make an array for making the logic of the direciton where
+    // an ai tank can turn into a direciton
+    int *indeces_in_grid = (int*) malloc(4 * sizeof(int*));
+    for (int j = 0; j < 4; j++) {
+        indeces_in_grid[j] = wall;
+    }
+    static int indeces[4] = {-25, -1, 25, 1};
+    // check wether the index in the grid on the left, right, up and down are walls
+    // or not.
+    for (int i = 0; i < 4; i++) {
+        int number = gameboard[index + indeces[i]];
+        if (number == ground) {
+            indeces_in_grid[i] = ground;
+        }
+    }
+
+    return indeces_in_grid;
+}
+
+
+// function to randomize an ai tanks direction
+// based on what options are available
+void randomize_direction(Enemy_tank* tank) {
+    double last_direction_prob = 0.2; // probability of turning in the last direction
+    int last_direction = tank->direction; // save the last direction
+    int random_index = rand() % 4; // get values from 1 to 3
+    int* arr = get_index_in_grid(tank->position.x, tank->position.y);
+    int random;
+    while (random == 1) {
+        random_index = rand() % 4;
+        random = arr[random_index];
+        if (random_index == last_direction) {
+            double prob = (double) rand() / RAND_MAX;
+            if (prob <= last_direction_prob) {
+                while (random_index != last_direction) {
+                    random_index = rand() % 4;
+                    random = arr[random_index];
+                }
+            }
+        }
+    }
+    tank->direction = random_index;
+}
+
 void shoot_tank(Tank* tank, Dyn_array *shots) {
     int shot_direction = no_direction;
 
@@ -100,6 +153,25 @@ void move_tank(Tank* tank, float delta) {
         }
     }
     *tank = tank_copy;
+}
+
+void move_enemy_tank(Enemy_tank* e_tank, float delta) {
+    Enemy_tank tank_copy = *e_tank;
+    float multiplier = delta * 100;
+
+    if (tank_copy.direction == up) tank_copy.position.y -= multiplier * 1;
+    else if (tank_copy.direction == down) tank_copy.position.y += multiplier * 1;
+
+    else if (tank_copy.direction == right) tank_copy.position.x += multiplier * 1;
+    else if (tank_copy.direction == left) tank_copy.position.x -= multiplier * 1;
+
+    for (int i = 0; i < wall_count; i++) {
+        if (CheckCollisionRecs(tank_copy.position, walls[i])) {
+            randomize_direction(e_tank);
+            return;
+        }
+    }
+    *e_tank = tank_copy;
 }
 
 void read_base_file(void) {
@@ -256,6 +328,8 @@ int main(void)
     InitWindow(SQUARE_SIZE * 25, SQUARE_SIZE * 25, "This is my test program for raylib");
     SetTargetFPS(60);
 
+    srand(time(NULL));
+
     // make an array for the bullets
     Dyn_array shots = {0}; // initialize the shots array as 0
     
@@ -265,6 +339,7 @@ int main(void)
 
     // make a pointer to the tank
     Tank* tank_p = &tank;
+    Enemy_tank* e_tank_p = &e_tank;
     build_walls();
     while (!WindowShouldClose())
     {
@@ -272,6 +347,7 @@ int main(void)
         key_press_checking(tank_p, &shots); // function for handling and listening for key presses
         update_shots(&shots, delta);
         move_tank(tank_p, delta); // based on key strokes move the tank
+        move_enemy_tank(e_tank_p, delta);
 
         BeginDrawing();
         draw_stuff(tank_p, &shots, &e_tank); // update the graphics
