@@ -93,17 +93,16 @@ int* get_index_in_grid(int posX, int posY) {
 // function to randomize an ai tanks direction
 // based on what options are available
 void randomize_direction(Enemy_tank* tank) {
-    double last_direction_prob = 0.2; // probability of turning in the last direction
-    int last_direction = tank->direction; // save the last direction
-    int random_index = rand() % 4; // get values from 1 to 3
+    int last_direction = tank->direction;
+    int random_index = rand() % 4;
     int* arr = get_index_in_grid(tank->position.x, tank->position.y);
-    int random;
+    int random = arr[random_index];
     while (random == 1) {
         random_index = rand() % 4;
         random = arr[random_index];
         if (random_index == last_direction) {
             double prob = (double) rand() / RAND_MAX;
-            if (prob <= last_direction_prob) {
+            if (prob >= 0.8) {
                 while (random_index != last_direction) {
                     random_index = rand() % 4;
                     random = arr[random_index];
@@ -112,6 +111,7 @@ void randomize_direction(Enemy_tank* tank) {
         }
     }
     tank->direction = random_index;
+    free(arr);
 }
 
 void shoot_tank(Tank* tank, Dyn_array *shots) {
